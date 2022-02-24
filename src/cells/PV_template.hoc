@@ -1,0 +1,502 @@
+/*
+Created by BluePyOpt(1.5.3) at 2020-05-02 08:46:08.997716
+*/
+{load_file("stdrun.hoc")}
+{load_file("import3d.hoc")}
+/*
+ * Check that global parameters are the same as with the optimization
+ */
+proc check_parameter(/* name, expected_value, value */){
+  strdef error
+  if($2 != $3){
+    sprint(error, "Parameter %s has different value %f != %f", $s1, $2, $3)
+    execerror(error)
+  }
+}
+proc check_simulator() {
+  check_parameter("celsius", 34, celsius)
+  check_parameter("v_init", -80, v_init)
+}
+
+begintemplate pv
+  public init, morphology, geom_nseg_fixed, geom_nsec
+  public soma, dend, apic, axon, myelin, node
+  create soma[1], dend[1], apic[1], axon[1], myelin[1], node[1]
+
+  objref this, CellRef, segCounts
+
+  public all, somatic, apical, ais, axonal, basal, myelinated, nodes, APC
+  objref all, somatic, apical, ais, axonal, basal, myelinated, nodes, APC
+
+  proc init(/* args: morphology_dir, morphology_name, target_myelinated_L, node_spacing, node_length */) { local target_myelinated_L, node_spacing, node_length, ais_target_L
+    all = new SectionList()
+    apical = new SectionList()
+    // full axon (including ais, myelinated, and node)
+    axonal = new SectionList()
+    ais = new SectionList()
+    basal = new SectionList()
+    somatic = new SectionList()
+    myelinated = new SectionList()
+    nodes = new SectionList()
+
+    //For compatibility with BBP CCells
+    CellRef = this
+
+    forall delete_section()
+
+
+    // https://www.sciencedirect.com/science/article/pii/S0896627300803232
+    // node and internode (myelinated sections) params from Arancibia-Cárcamo et al. 2017 (https://elifesciences.org/articles/23329)
+    // note that longer node lengths tend to have shower spacing (v. small correlation)
+    // that is, a node length of 1 has an average spacing of 150 um in optic nerve according to Arancibia-Cárcamo et al. 2017
+    target_myelinated_L = 1000
+    node_spacing = 80.0 // 80-200 um in optic nerve & cortex 
+    node_length = 2 // 1-2
+    ais_target_L = 60
+
+    if(numarg() >= 2) {
+      load_morphology($s1, $s2)
+      if (numarg() >= 3) {
+        target_myelinated_L = $3
+      }
+      if (numarg() >= 4) {
+        node_spacing = $4
+      }
+      if (numarg() >= 5) {
+        node_length = $5
+      }
+      if (numarg() >= 6) {
+        ais_target_L = $6
+      }
+    } else {
+      load_morphology($s1, "C210401C.asc")
+    }
+
+
+
+    geom_nseg()
+    replace_axon(ais_target_L, target_myelinated_L, node_spacing, node_length)
+    insertChannel()
+    biophys()
+    distribute_distance(CellRef.basal, "gImbar_Im", "(-0.8696 + 2.087*exp((%.17g)*0.0031))*4.9053963032026885e-07")
+    distribute_distance(CellRef.basal, "gIhbar_Ih", "(-0.8696 + 2.087*exp((%.17g)*0.0031))*4.3100495575754699e-05")
+    re_init_rng()
+  }
+
+  proc load_morphology(/* morphology_dir, morphology_name */) {localobj morph, import, sf, extension
+    strdef morph_path
+    sprint(morph_path, "%s/%s", $s1, $s2)
+
+    sf = new StringFunctions()
+    extension = new String()
+
+    sscanf(morph_path, "%s", extension.s)
+    sf.right(extension.s, sf.len(extension.s)-4)
+
+    if( strcmp(extension.s, ".asc") == 0 ) {
+      morph = new Import3d_Neurolucida3()
+    } else if( strcmp(extension.s, ".swc" ) == 0) {
+      morph = new Import3d_SWC_read()
+    } else {
+      printf("Unsupported file format: Morphology file has to end with .asc or .swc" )
+      quit()
+    }
+
+    morph.quiet = 1
+    morph.input(morph_path)
+
+    import = new Import3d_GUI(morph, 0)
+    import.instantiate(this)
+  }
+
+  /*
+  * Assignment of mechanism values based on distance from the soma
+  * Matches the BluePyOpt method
+  */
+  proc distribute_distance(){local x localobj sl
+    strdef stmp, distfunc, mech
+
+    sl = $o1
+    mech = $s2
+    distfunc = $s3
+    this.soma[0] distance(0, 0.5)
+    sprint(distfunc, "%%s %s(%%f) = %s", mech, distfunc)
+    forsec sl for(x, 0) {
+      sprint(stmp, distfunc, secname(), x, distance(x))
+      execute(stmp)
+    }
+  }
+
+  proc geom_nseg() {
+    this.geom_nsec() //To count all sections
+    //TODO: geom_nseg_fixed depends on segCounts which is calculated by
+    //  geom_nsec.  Can this be collapsed?
+    this.geom_nseg_fixed(40)
+    this.geom_nsec() //To count all sections
+  }
+
+  proc insertChannel() {
+    forsec this.all {
+      insert pas
+    }
+    forsec this.apical {
+    }
+    forsec this.ais {
+      insert Ca_LVAst
+      insert Ca_HVA
+      insert CaDynamics_E2
+      insert SKv3_1
+      insert Nav11m
+      insert SK_E2
+      insert K_Tst
+      insert K_Pst
+      insert Nap_Et2
+      insert NaTa_t
+      insert Nav11
+      insert Im
+    }
+    forsec this.basal {
+      insert NaTs2_t
+      insert Nap_Et2
+      insert Nav11
+      insert Nav11m
+      insert K_Tst
+      insert K_Pst
+      insert SKv3_1
+      insert Im
+      insert Ih
+    }
+    forsec this.somatic {
+      insert NaTs2_t
+      insert Nap_Et2
+      insert Nav11
+      insert SKv3_1
+      insert SK_E2
+      insert K_Tst
+      insert K_Pst
+      insert CaDynamics_E2
+      insert Ca_HVA
+      insert Ca_LVAst
+      insert Nav11m
+      insert Im
+    }
+    forsec this.myelinated {
+    }
+    forsec this.nodes {
+      insert Nav11
+      insert SKv3_1
+      insert Nav11m
+    }
+  }
+
+  proc biophys() {
+
+    forsec CellRef.all {
+      Ra = 100
+      g_pas = 1.1753712511359735e-05
+      e_pas = -62.605486758793134
+    }
+
+    forsec CellRef.apical {
+    }
+
+    forsec CellRef.ais {
+      cm = 1
+      ena = 50
+      ek = -90
+      // NaV1.1/Kv3 = 2.2
+      gNaTa_tbar_NaTa_t = 0.18952539630604903
+      gNav11bar_Nav11 = 0.70000
+      gNap_Et2bar_Nap_Et2 = 9.9914521169257362e-07
+      gK_Pstbar_K_Pst = 4.9798348545652884e-06
+      gK_Tstbar_K_Tst = 0.0958123928067732
+      gSK_E2bar_SK_E2 = 0.037731878034846213
+      gSKv3_1bar_SKv3_1 = 0.318181818181818
+      gCa_HVAbar_Ca_HVA = 6.6928045008285222e-06
+      gCa_LVAstbar_Ca_LVAst = 0.00086252457600405862
+      decay_CaDynamics_E2 = 357.51087087210146
+      gamma_CaDynamics_E2 = 0.0033841884469849211
+      gImbar_Im = 0.00031319601262909993
+      gNav11bar_Nav11m = 0
+      mh_Nav11m = -26.600000000000001
+      ms_Nav11m = 6.7000000000000002
+      hh_Nav11m = -60.200000000000003
+      hs_Nav11m = 5.5999999999999996
+      tmh_Nav11m = -40
+      thh_Nav11m = -65
+    }
+
+    forsec CellRef.basal {
+      cm = 1
+      ena = 50
+      ek = -90
+      gNaTs2_tbar_NaTs2_t = 0.0020626919757689753
+      gNav11bar_Nav11 = 8.7937735030300143e-06
+      gNap_Et2bar_Nap_Et2 = 1.6389087983832434e-07
+      gSKv3_1bar_SKv3_1 = 8.1625882332958207e-05
+      gK_Pstbar_K_Pst = 4.7998069883951371e-08
+      gK_Tstbar_K_Tst = 1.6848144871536559e-05
+      gNav11bar_Nav11m = 0
+      mh_Nav11m = -26.600000000000001
+      ms_Nav11m = 6.7000000000000002
+      hh_Nav11m = -60.200000000000003
+      hs_Nav11m = 5.5999999999999996
+      tmh_Nav11m = -40
+      thh_Nav11m = -65
+    }
+
+    forsec CellRef.somatic {
+      cm = 1
+      ena = 50
+      ek = -85
+      gNaTs2_tbar_NaTs2_t = 0.95585841724208476
+      gNav11bar_Nav11 = 0.08601849323989183
+      gNap_Et2bar_Nap_Et2 = 7.9295968986726376e-07
+      gK_Pstbar_K_Pst = 1.8986651083545768e-05
+      gK_Tstbar_K_Tst = 0.019405714609111748
+      gSK_E2bar_SK_E2 = 1.6228971252382314e-08
+      gSKv3_1bar_SKv3_1 = 0.18497365407533689
+      gCa_HVAbar_Ca_HVA = 0.00033062469952363
+      gCa_LVAstbar_Ca_LVAst = 0.0011410752102358152
+      decay_CaDynamics_E2 = 103.86036962355075
+      gamma_CaDynamics_E2 = 0.032352264465451266
+      gImbar_Im = 0.00010335472123811204
+      gNav11bar_Nav11m = 0
+      mh_Nav11m = -26.600000000000001
+      ms_Nav11m = 6.7000000000000002
+      hh_Nav11m = -60.200000000000003
+      hs_Nav11m = 5.5999999999999996
+      tmh_Nav11m = -40
+      thh_Nav11m = -65
+    }
+
+    forsec CellRef.myelinated {
+      cm = 0.1
+    }
+
+    forsec CellRef.nodes {
+      cm = 1
+      ena = 50
+      ek = -90
+      // NaV1.1/Kv3 = 3.3
+      gNav11bar_Nav11 = 1.0499999999999998
+      // value as in AIS
+      gSKv3_1bar_SKv3_1 = 0.318181818181818
+      gNav11bar_Nav11m = 0
+      mh_Nav11m = -26.600000000000001
+      ms_Nav11m = 6.7000000000000002
+      hh_Nav11m = -60.200000000000003
+      hs_Nav11m = 5.5999999999999996
+      tmh_Nav11m = -40
+      thh_Nav11m = -65
+    }
+
+  }
+
+  func sec_count(/* SectionList */) { local nSec
+    nSec = 0
+    forsec $o1 {
+        nSec += 1
+    }
+    return nSec
+  }
+
+  /*
+  * Iterate over the section and compute how many segments should be allocate to
+  * each.
+  */
+  proc geom_nseg_fixed(/* chunkSize */) { local secIndex, chunkSize
+    chunkSize = $1
+    soma area(.5) // make sure diam reflects 3d points
+    secIndex = 0
+    forsec all {
+      nseg = 1 + 2*int(L/chunkSize)
+      segCounts.x[secIndex] = nseg
+      secIndex += 1
+    }
+  }
+
+  /*
+  * Count up the number of sections
+  */
+  proc geom_nsec() { local nSec
+    nSecAll = sec_count(all)
+    nSecSoma = sec_count(somatic)
+    nSecApical = sec_count(apical)
+    nSecBasal = sec_count(basal)
+    nSecMyelinated = sec_count(myelinated)
+    nSecNodes = sec_count(nodes)
+    nSecAis = sec_count(ais)
+    nSecAxonalOrig = nSecAxonal = sec_count(axonal)
+
+    segCounts = new Vector()
+    segCounts.resize(nSecAll)
+    nSec = 0
+    forsec all {
+      segCounts.x[nSec] = nseg
+      nSec += 1
+    }
+  }
+
+  /*
+  * Replace the axon built from the original morphology file with a stub axon
+  */
+
+  proc replace_axon(/* ais_target_L, target_myelinated_L, node_spacing, node_length */){ local nSec, L_chunk, dist, i1, i2, i3, count, L_target, chunkSize, L_real localobj diams, lens
+
+    L_target = $1  // length of stub axon
+    nseg0 = 5  // number of segments for each of the two axon sections
+
+    nseg_total = nseg0 * 2
+    chunkSize = L_target/nseg_total
+
+    nSec = 0
+    forsec axonal{nSec = nSec + 1}
+
+    // Try to grab info from original axon
+    if(nSec < 1){ //At least two axon sections have to be present!
+
+        execerror("Less than two axon sections are present! Add an axon to the morphology and try again!")
+
+    } else {
+
+      diams = new Vector()
+      lens = new Vector()
+
+      access axon[0]
+      i1 = v(0.0001) // used when serializing sections prior to sim start
+
+      access axon[1]
+      i2 = v(0.0001) // used when serializing sections prior to sim start
+
+      access axon[2]
+      i3 = v(0.0001) // used when serializing sections prior to sim start
+      count = 0
+      forsec axonal{ // loop through all axon sections
+
+        nseg = 1 + int(L/chunkSize/2.)*2  //nseg to get diameter
+        for (x) {
+          if (x > 0 && x < 1) {
+            count = count + 1
+            diams.resize(count)
+            diams.x[count-1] = diam(x)
+            lens.resize(count)
+            lens.x[count-1] = L/nseg
+            if( count == nseg_total ){
+              break
+            }
+          }
+        }
+        if( count == nseg_total ){
+          break
+        }
+      }
+      // get rid of the old axon
+      forsec axonal{delete_section()}
+      create axon[2]
+
+      L_real = 0
+      count = 0
+
+      // new axon dependant on old diameters
+      for i=0,1{
+        access axon[i]
+        L =  L_target/2
+        nseg = nseg_total/2
+
+        for (x) {
+          if (x > 0 && x < 1) {
+            diam(x) = diams.x[count]
+            L_real = L_real+lens.x[count]
+            count = count + 1
+          }
+        }
+
+        all.append()
+        axonal.append()
+        ais.append()
+
+        if (i == 0) {
+          v(0.0001) = i1
+        } else {
+          v(0.0001) = i2
+        }
+      }
+
+      soma[0] connect axon[0](0), 1
+      axon[0] connect axon[1](0), 1
+
+      // see init
+      target_myelinated_L = $2
+      node_spacing = $3
+      node_length = $4
+
+      num_nodes = int(target_myelinated_L/node_spacing)
+      myelin_L = node_spacing * num_nodes
+
+      create myelin[num_nodes]
+      create node[num_nodes]
+
+      for i=0,num_nodes-1{
+        myelin[i] {
+          L = node_spacing
+          diam = 0.73
+          nseg = 9
+          all.append()
+          axonal.append()
+          myelinated.append()
+        }
+        node[i] {
+          L = node_length
+          diam = 0.64
+          nseg = 9
+          all.append()
+          axonal.append()
+          nodes.append()
+        }
+      }
+
+      access myelin[0]
+
+      // connect sections
+      axon[1] connect myelin[0](0), 1
+      for i=0,num_nodes-1{
+        myelin[i] connect node[i](0), 1
+        if (i<num_nodes-1){
+          node[i] connect myelin[i+1](0), 1
+        }
+      }
+
+      // print "Target stub axon length:", L_target, "um, equivalent length: ", L_real, "um"
+      // print "each myelin section length:", node_spacing, "um, total myelinated length: ", myelin_L, "um. ", "Number of nodes: ", num_nodes
+
+    }
+  }
+
+
+  func hash_str() {localobj sf strdef right
+    sf = new StringFunctions()
+
+    right = $s1
+
+    n_of_c = sf.len(right)
+
+    hash = 0
+    char_int = 0
+    for i = 0, n_of_c - 1 {
+      sscanf(right, "%c", & char_int)
+      hash = (hash * 31 + char_int) % (2 ^ 31 - 1)
+      sf.right(right, 1)
+    }
+
+    return hash
+  }
+
+  proc re_init_rng() {localobj sf
+    strdef full_str, name
+
+    sf = new StringFunctions()
+
+  }
+
+endtemplate pv
