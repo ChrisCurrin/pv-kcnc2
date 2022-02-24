@@ -1,4 +1,11 @@
-:Comment : "Kv3.2" channel
+COMMENT
+
+"Kv3.2" channel.
+BBP Kv channel, but activation/inactivation vHalf and slope adjusted to fit experimental data.
+Use this mechanism to 'mutate' given proportion of Kv3.2 channels.
+
+ENDCOMMENT
+
 :Reference : :		Characterization of a Shaw-related potassium channel family in rat brain, The EMBO Journal, vol.11, no.7,2473-2486 (1992)
 
 NEURON	{
