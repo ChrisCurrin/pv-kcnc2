@@ -9,7 +9,7 @@ ENDCOMMENT
 :Reference : :		Characterization of a Shaw-related potassium channel family in rat brain, The EMBO Journal, vol.11, no.7,2473-2486 (1992)
 
 NEURON	{
-	SUFFIX SKv3_1
+	SUFFIX SKv3_1m
 	USEION k READ ek WRITE ik
 	RANGE gSKv3_1bar, gSKv3_1, ik 
 }
@@ -55,7 +55,7 @@ INITIAL{
 
 PROCEDURE rates(){
 	UNITSOFF
-		mInf =  1/(1+exp(((v -(18.700))/(-9.700))))
+		mInf =  1/(1+exp(((v -(-9.74))/(-9.700))))
 		mTau =  0.2*20.000/(1+exp(((v -(-46.560))/(-44.140))))
 	UNITSON
 }

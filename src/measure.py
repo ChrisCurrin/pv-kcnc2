@@ -74,6 +74,15 @@ def calculate_failures(times, other_times, tol=2.):
             failure_times.append(t)
     return np.array(failure_times)
 
+def total_area(nrn_sec) -> float:
+    """Return the total area of a neuron section in square microns (um2)."""
+    from neuron import h
+    h.finitialize()
+    if isinstance(nrn_sec, h.Section):
+        return sum([seg.area() for seg in nrn_sec.allseg()])
+    else:
+        return sum([total_area(sec) for sec in nrn_sec.all])
+
 
 if __name__ == "__main__":
     try:

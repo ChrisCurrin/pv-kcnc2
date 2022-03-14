@@ -58,7 +58,7 @@ def get_pv_params(pv):
 # different biophysical properties (by default, reset_biophys uses what is in PV_template.hoc)
 
 
-def reset_biophys(pv, display=False):
+def reset_biophys(pv):
     """Change biophysical properties of a "pv" cell"""
     pv.biophys()
 

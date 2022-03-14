@@ -48,7 +48,7 @@ INITIAL{
 
 PROCEDURE rates(){
 	UNITSOFF
-		mInf =  1/(1+exp(((v -(18.700))/(-9.700))))
+		mInf =  1/(1+exp(((v -(.11))/(-9.700))))
 		mTau =  0.2*20.000/(1+exp(((v -(-46.560))/(-44.140))))
 	UNITSON
 }

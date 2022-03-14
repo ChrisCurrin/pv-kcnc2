@@ -53,7 +53,7 @@ def nearest_value(arr: np.ndarray, value: Number):
 
 def nearest_idx_val(arr: np.ndarray, value: Number):
     idx = nearest_idx(arr, value)
-    return arr[idx], idx
+    return idx, arr[idx]
 
 
 def get_last_sec(long_df):

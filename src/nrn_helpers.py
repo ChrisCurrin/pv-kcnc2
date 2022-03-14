@@ -14,16 +14,15 @@ import numpy as np
 from src import settings
 from src.data.files import delete_files, cd
 
-logger = logging.getLogger("hoc_helpers")
+logger = logging.getLogger("nrn_helpers")
 
 
-t_vec = None
 initialised = False
 __KWARGS__ = {}
 
 
 def init_nrn(celsius=37, v_init=-65, reinit=False):
-    global initialised, t_vec, __KWARGS__
+    global initialised, __KWARGS__
     if initialised and not reinit:
         return True
     else:
@@ -68,7 +67,6 @@ def init_nrn(celsius=37, v_init=-65, reinit=False):
     h.celsius = celsius
     h.v_init = v_init
     logger.info("celsius={} and v_init={}".format(h.celsius, h.v_init))
-    t_vec = h.Vector()
     np.random.seed(settings.RANDOM_SEED)
 
     __KWARGS__ = {}

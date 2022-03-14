@@ -11,18 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 def mut(Pv, MUT):
-    """change Nav1.1 conductance within 'mutated' Nav11m channels"""
+    """change Nav1.1 conductance within 'mutated' SKv3_1m channels"""
     for sec in Pv.all:
-        if "Nav11" in [mech.name() for seg in sec.allseg() for mech in seg]:
-            gNav = sec(0.5).gNav11bar_Nav11
+        if "SKv3_1" in [mech.name() for seg in sec.allseg() for mech in seg]:
+            gSKv3_1 = sec(0.5).gSKv3_1bar_SKv3_1
         for seg in sec:
             for mech in seg:
-                if mech.name() == "Nav11m":
-                    seg.gNav11bar_Nav11m = MUT * gNav
-                    seg.mh_Nav11m, seg.hh_Nav11m = -26.6, -60.2
-                    seg.tmh_Nav11m, seg.thh_Nav11m = -40.0, -65.0
-                if mech.name() == "Nav11":
-                    seg.gNav11bar_Nav11 = (1.0 - MUT) * gNav
+                if mech.name() == "SKv3_1m":
+                    seg.gSKv3_1bar_SKv3_1m = MUT * gSKv3_1
+                    seg.mh_SKv3_1m, seg.hh_SKv3_1m = -26.6, -60.2
+                    seg.tmh_SKv3_1m, seg.thh_SKv3_1m = -40.0, -65.0
+                if mech.name() == "SKv3_1":
+                    seg.gSKv3_1bar_SKv3_1 = (1.0 - MUT) * gSKv3_1
     return Pv
 
 
