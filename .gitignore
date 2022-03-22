@@ -1,6 +1,7 @@
 # Project
 save/**
-*hash.md5*
+**/mechanisms/arm64/
+**/mechanisms/hash.*
 
 # NEURON
 *.dll

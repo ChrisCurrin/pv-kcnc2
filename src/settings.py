@@ -33,7 +33,14 @@ if not os.path.isdir(MOD_PATH):
     MOD_PATH = os.path.join(dir_path, MOD_PATH)
     HOC_PATH = os.path.join(dir_path, HOC_PATH)
 if platform.system() == "Linux" or platform.system() == "Darwin":
-    NRNMECH_PATH = MOD_PATH + "x86_64/.libs/libnrnmech.so"
+    from pathlib import Path
+    nrnmechs = list(Path(MOD_PATH).glob("*/**/libnrnmech.so"))
+    if len(nrnmechs) != 1:
+        raise ValueError(f"libnrnmech.so not found in {MOD_PATH}")
+    NRNMECH_PATH = str(nrnmechs[0].absolute())
+    # if "arm" in platform.processor():
+        # NRNMECH_PATH = MOD_PATH + 
+    # NRNMECH_PATH = MOD_PATH + "x86_64/.libs/libnrnmech.so"
 elif platform.system() == "Windows":
     NRNMECH_PATH = MOD_PATH + "nrnmech.dll"
 else:

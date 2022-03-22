@@ -14,7 +14,7 @@ logger = logging.getLogger("vis")
 
 
 def set_default_style():
-    sns.set_theme(context="notebook",  # poster or paper
+    sns.set_theme(context="paper",  # poster or paper
                   style="ticks",
                   palette="colorblind",
                   rc={

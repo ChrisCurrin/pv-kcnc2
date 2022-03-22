@@ -4,7 +4,8 @@
 NEURON	{
 	SUFFIX SKv3_1
 	USEION k READ ek WRITE ik
-	RANGE gSKv3_1bar, gSKv3_1, ik 
+	RANGE gSKv3_1bar, gSKv3_1, ik
+	RANGE a,b,c,d,e
 }
 
 UNITS	{
@@ -14,7 +15,12 @@ UNITS	{
 }
 
 PARAMETER	{
-	gSKv3_1bar = 0.00001 (S/cm2) 
+	gSKv3_1bar = 0.00001 (S/cm2)
+	a = -2.11 			(1)
+	b = -9.7 			(1)
+	c = 20.0 			(1)
+	d = 10.0 			(1)
+	e = 8	 			(1)
 }
 
 ASSIGNED	{
@@ -48,8 +54,8 @@ INITIAL{
 
 PROCEDURE rates(){
 	UNITSOFF
-		mInf =  1/(1+exp(((v -(.11))/(-9.700))))
-		mTau =  0.2*20.000/(1+exp(((v -(-46.560))/(-44.140))))
+		mInf =  1/(1+exp(((v -(a))/(b))))
+		mTau =  c/(1+exp(((v -(d))/(e))))
 	UNITSON
 }
 
