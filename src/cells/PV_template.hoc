@@ -217,7 +217,7 @@ begintemplate pv
       decay_CaDynamics_E2 = 357.51087087210146
       gamma_CaDynamics_E2 = 0.0033841884469849211
       gImbar_Im = 0.00031319601262909993
-      gNav11bar_SKv3_1m = 0
+      gSKv3_1bar_SKv3_1m = 0
       mh_SKv3_1m = -26.600000000000001
       ms_SKv3_1m = 6.7000000000000002
       hh_SKv3_1m = -60.200000000000003
@@ -236,7 +236,7 @@ begintemplate pv
       gSKv3_1bar_SKv3_1 = 8.1625882332958207e-05
       gK_Pstbar_K_Pst = 4.7998069883951371e-08
       gK_Tstbar_K_Tst = 1.6848144871536559e-05
-      gNav11bar_SKv3_1m = 0
+      gSKv3_1bar_SKv3_1m = 0
       mh_SKv3_1m = -26.600000000000001
       ms_SKv3_1m = 6.7000000000000002
       hh_SKv3_1m = -60.200000000000003
@@ -261,7 +261,7 @@ begintemplate pv
       decay_CaDynamics_E2 = 103.86036962355075
       gamma_CaDynamics_E2 = 0.032352264465451266
       gImbar_Im = 0.00010335472123811204
-      gNav11bar_SKv3_1m = 0
+      gSKv3_1bar_SKv3_1m = 0
       mh_SKv3_1m = -26.600000000000001
       ms_SKv3_1m = 6.7000000000000002
       hh_SKv3_1m = -60.200000000000003
@@ -282,7 +282,7 @@ begintemplate pv
       gNav11bar_Nav11 = 1.0499999999999998
       // value as in AIS
       gSKv3_1bar_SKv3_1 = 0.318181818181818
-      gNav11bar_SKv3_1m = 0
+      gSKv3_1bar_SKv3_1m = 0
       mh_SKv3_1m = -26.600000000000001
       ms_SKv3_1m = 6.7000000000000002
       hh_SKv3_1m = -60.200000000000003

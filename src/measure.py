@@ -85,11 +85,12 @@ def total_area(nrn_sec) -> float:
 
 
 if __name__ == "__main__":
-    try:
-        from pv_nrn import get_pv
-    except ImportError:
-        print("must be run from `pv-scn1a` directory")
+    from src.nrn_helpers import init_nrn
+    from src.cells.pv_nrn import get_pv
     from src.run import get_trace
+
+    init_nrn()
+
     amp = 0.1  # nA
     dur = 10  # ms
 

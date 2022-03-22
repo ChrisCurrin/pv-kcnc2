@@ -10,8 +10,8 @@ from src.settings import STIM_ONSET, STIM_PULSE_DUR
 logger = logging.getLogger(__name__)
 
 
-def mut(Pv, MUT):
-    """change Nav1.1 conductance within 'mutated' SKv3_1m channels"""
+def mut(Pv, MUT, gSKv3_1=None):
+    """change Kv3.1/2 conductance within 'mutated' SKv3_1m channels"""
     for sec in Pv.all:
         if "SKv3_1" in [mech.name() for seg in sec.allseg() for mech in seg]:
             gSKv3_1 = sec(0.5).gSKv3_1bar_SKv3_1
@@ -19,8 +19,6 @@ def mut(Pv, MUT):
             for mech in seg:
                 if mech.name() == "SKv3_1m":
                     seg.gSKv3_1bar_SKv3_1m = MUT * gSKv3_1
-                    seg.mh_SKv3_1m, seg.hh_SKv3_1m = -26.6, -60.2
-                    seg.tmh_SKv3_1m, seg.thh_SKv3_1m = -40.0, -65.0
                 if mech.name() == "SKv3_1":
                     seg.gSKv3_1bar_SKv3_1 = (1.0 - MUT) * gSKv3_1
     return Pv
