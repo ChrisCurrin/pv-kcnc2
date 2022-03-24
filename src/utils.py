@@ -1,35 +1,18 @@
 # helper functions
 
 from numbers import Number
-from typing import Iterable
-import pandas as pd
 import numpy as np
 
-from src.constants import DISTANCE_LABEL, NAV_FRAC_LABEL, SECTION_LABEL
+from src.constants import DISTANCE_LABEL, SECTION_LABEL
 
 
-def get_key(pv, frac, nav_loc, stim, dur):
-    return f"{pv.name}_{frac}_{nav_loc}_{stim}_{dur}"
+def mut_name(frac):
+    return f"C165Y - {100*frac:.0f}%" if frac > 0 else "WT"
 
 
-def format_nav_loc(nav_loc: str):
-    if not isinstance(nav_loc, str) and isinstance(nav_loc, Iterable):
-        return "+".join([format_nav_loc(nv) for nv in nav_loc])
-    elif nav_loc == "ais":
-        return "AIS"
-    elif nav_loc == "somatic":
-        return format_nav_loc("soma")
-    elif nav_loc == "axonal":
-        return format_nav_loc(("ais", "nodes"))
-    else:
-        return nav_loc.capitalize()
-
-
-def perc_decrease(_df, fp=2):
-    if isinstance(_df, pd.DataFrame) and NAV_FRAC_LABEL in _df.columns:
-        return np.round(100 * (1 - _df[NAV_FRAC_LABEL]), fp)
-    else:
-        return np.round(100 * (1 - _df), fp)
+def get_key(pv, frac, stim, dur):
+    basename = mut_name(frac)
+    return f"{basename}_{pv.name}_{stim}_{dur}"
 
 
 def str_to_tuple(s):

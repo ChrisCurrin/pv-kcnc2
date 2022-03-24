@@ -1,74 +1,12 @@
 from typing import List, Union
 import logging
-import numpy as np
 import pandas as pd
 from neuron import h
 
 from src.constants import DISTANCE_LABEL, SECTION_LABEL, TIME_LABEL
-from src.settings import STIM_ONSET, STIM_PULSE_DUR
+from src.cells.pv_nrn import set_stim
 
 logger = logging.getLogger(__name__)
-
-
-def mut(Pv, MUT, gSKv3_1=None):
-    """change Kv3.1/2 conductance within 'mutated' SKv3_1m channels"""
-    for sec in Pv.all:
-        if "SKv3_1" in [mech.name() for seg in sec.allseg() for mech in seg]:
-            gSKv3_1 = sec(0.5).gSKv3_1bar_SKv3_1
-        for seg in sec:
-            for mech in seg:
-                if mech.name() == "SKv3_1m":
-                    seg.gSKv3_1bar_SKv3_1m = MUT * gSKv3_1
-                if mech.name() == "SKv3_1":
-                    seg.gSKv3_1bar_SKv3_1 = (1.0 - MUT) * gSKv3_1
-    return Pv
-
-
-def set_relative_nav11bar(
-    Pv, proportion: float, at="nodes", base: Union[float, str] = "axon"
-):
-    """Set Nav1.1 conductance relative to a `base` at section(s) - `at`"""
-    if isinstance(base, str):
-        assert (
-            at != base
-        ), f"cannot change values at '{at}' when it is also the `base_sec`."
-        base = getattr(Pv, base)[-1].gNav11bar_Nav11
-
-    for sec in getattr(Pv, at):
-        if "myelin" in sec.hname():
-            continue
-        sec.gNav11bar_Nav11 = base * proportion
-
-
-def set_nrn_prop(pv, property: str, value: float, secs="all", ignore_error=False):
-    """set neuron property"""
-    for sec in getattr(pv, secs):
-        try:
-            setattr(sec, property, value)
-        except AttributeError as err:
-            if not ignore_error:
-                raise err
-
-
-def set_stim(
-    sec, amplitude: float, duration: float, frequency: Union[float, bool] = False
-):
-    """set stimulation
-
-    Either pulse input using Ipulse2 (see mod file for details) or IClamp (see NEURON docs).
-    """
-    if frequency > 0:
-        ipulse = h.Ipulse2(sec(0.5))
-        ipulse.dur = STIM_PULSE_DUR  # ms of each pulse
-        ipulse.delay = STIM_ONSET  # ms
-        ipulse.num = np.ceil(duration / 1000 * frequency)
-        ipulse.amp = amplitude  # nA
-        ipulse.per = 1000 / frequency  # ms interval between pulse onsets
-        return ipulse
-    else:
-        Ic = h.IClamp(sec(0.5))
-        Ic.dur, Ic.delay, Ic.amp = duration, STIM_ONSET, amplitude
-        return Ic
 
 
 def record_var(sec, to_record: str, loc: float = 0.5):

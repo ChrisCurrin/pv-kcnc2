@@ -47,7 +47,7 @@ def get_cached_df(name, *args, **kwargs):
     if x_df is not None and not is_test:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=NaturalNameWarning)
-            x_df.to_hdf(path, f"/df", "w", complevel=7)
+            x_df.to_hdf(path, "/df", "w", complevel=7)
 
     apn = {}
     if isinstance(AP, dict):
@@ -66,7 +66,7 @@ def get_cached_df(name, *args, **kwargs):
     if not is_test:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=Warning)
-            ap_series.to_hdf(path, f"/apn", complevel=7)
+            ap_series.to_hdf(path, "/apn", complevel=7)
 
     return AP, x_df
 

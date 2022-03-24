@@ -45,7 +45,7 @@ def init_nrn(celsius=37, v_init=-65, reinit=False):
     if __mod_files_changed(settings.MOD_PATH) or settings.NEURON_RECOMPILE or reinit:
         with cd(settings.MOD_PATH, with_logs=False):
             output = nrnivmodl(clean_after=True)
-        if "Error" in str(output):
+        if "failed" in str(output):
             raise Exception("MOD FILES not compiled successfully")
 
     # load mod files
@@ -96,16 +96,19 @@ def nrnivmodl(path="", clean_after=True) -> Tuple[str, Optional[str]]:
 
     result = os.system(f"nrnivmodl {path}")
 
-    if result == 0:
+    # check if temp file exists, indicating an error
+    if list(Path(path).glob("*.tmp")):
+        compiler_output = "nrnivmodl: compilation failed - tmp file exists"
+    elif result == 0:
         compiler_output = "nrnivmodl: compilation successful"
     else:
         compiler_output = "nrnivmodl: compilation failed"
-        err = "nrnivmodl: compilation failed"
+        err = "nrnivmodl: compilation failed - unknown error"
 
     if clean_after:
         compiled_files = functools.reduce(
             lambda l1, l2: l1 + l2,
-            [glob.glob("*.{}".format(file_type)) for file_type in ["o", "c"]],
+            [glob.glob("*.{}".format(file_type)) for file_type in ["o", "c", "tmp"]],
         )
         delete_files(compiled_files)
 
