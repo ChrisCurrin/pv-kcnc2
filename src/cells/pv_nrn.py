@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Union
 
+import numpy as np
 from neuron import h
 from src.settings import STIM_ONSET, STIM_PULSE_DUR
 from src.utils import mut_name

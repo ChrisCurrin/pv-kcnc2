@@ -12,7 +12,7 @@ NEURON	{
 	SUFFIX SKv3_1m
 	USEION k READ ek WRITE ik
 	RANGE gSKv3_1bar, gSKv3_1, ik 
-	RANGE a,b,c,d,e
+	RANGE iv_shift, iv_gain, tau_scale, tau_shift, tau_gain
 }
 
 UNITS	{
@@ -23,11 +23,11 @@ UNITS	{
 
 PARAMETER	{
 	gSKv3_1bar = 0.00001 (S/cm2)
-	a = -20.0			 (1)
-    b = -10.2			 (1)
-    c = 28				 (1)
-    d = -10.0			 (1)
-    e = 6.0				 (1)
+	iv_shift = -20.0			 (1)
+    iv_gain = -10.2			 	 (1)
+    tau_scale = 28				 (1)
+    tau_shift = -10.0			 (1)
+    tau_gain = 6.0				 (1)
 }
 
 ASSIGNED	{
@@ -61,8 +61,8 @@ INITIAL{
 
 PROCEDURE rates(){
 	UNITSOFF
-		mInf =  1/(1+exp(((v -(a))/(b))))
-		mTau =  c/(1+exp(((v -(d))/(e))))
+		mInf =  1/(1+exp(((v -(iv_shift))/(iv_gain))))
+		mTau =  tau_scale/(1+exp(((v -(tau_shift))/(tau_gain))))
 	UNITSON
 }
 
