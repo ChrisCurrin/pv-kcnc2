@@ -7,7 +7,7 @@ import platform
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 
@@ -80,11 +80,26 @@ def env_var(**kwargs):
     return __KWARGS__
 
 
+def remove_cell_from_neuron(cell: Union[str, "hoc.HocObject"]):
+    """
+    Remove cell from neuron's objects
+
+    :param cell: name of cell to remove. If hoc.HocObject is given, must have an 'all' attribute
+    """
+    from neuron import h
+    from src.cells.pv_nrn import get_pv
+
+    if isinstance(cell, str):
+        cell = get_pv(cell)
+    for sec in cell.all:
+        h.delete_section(sec=sec)
+
+
 def nrnivmodl(path="", clean_after=True) -> Tuple[str, Optional[str]]:
     """
     Compile mod files in path
 
-    Note that the compiled file (nrnmech.dll or x86_64/libnrnmech.so) is created in the 
+    Note that the compiled file (nrnmech.dll or x86_64/libnrnmech.so) is created in the
     current working directory.
 
     :param path: path to mod files or use current path if empty
@@ -142,7 +157,7 @@ def __mod_files_changed(path=settings.MOD_PATH):
 def __md5(fname):
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(2 ** 20), b""):
+        for chunk in iter(lambda: f.read(2**20), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
