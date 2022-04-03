@@ -5,8 +5,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from src.constants import (AIS_LABEL, DISTANCE_LABEL, SITE_LABEL,
-                           TERMINAL_LABEL, TIME_LABEL, VOLTAGE_LABEL)
+from src.constants import (
+    AIS_LABEL,
+    DISTANCE_LABEL,
+    SITE_LABEL,
+    TERMINAL_LABEL,
+    TIME_LABEL,
+    VOLTAGE_LABEL,
+)
 from src.data import concise_df, get_file_path, is_long_form, wide_to_long
 from src.settings import SECTION_PALETTE, STIM_ONSET, STIM_PULSE_DUR
 
@@ -14,30 +20,35 @@ logger = logging.getLogger("vis")
 
 
 def set_default_style():
-    sns.set_theme(context="paper",  # poster or paper
-                  style="ticks",
-                  palette="colorblind",
-                  rc={
-                      "pdf.fonttype": 42,  # embed font in output
-                      "figure.facecolor": "white",
-                      "figure.dpi": 200,
-                      "legend.frameon": False,
-                      "axes.spines.left": True,
-                      "axes.spines.bottom": True,
-                      "axes.spines.right": False,
-                      "axes.spines.top": False,
-                      "savefig.bbox": "tight",
-                  }
-                  )
+    sns.set_theme(
+        context="paper",  # poster or paper
+        style="ticks",
+        palette="colorblind",
+        rc={
+            "pdf.fonttype": 42,  # embed font in output
+            "svg.fonttype": "none",  # embed font in output
+            "figure.facecolor": "white",
+            "figure.dpi": 200,
+            "legend.frameon": False,
+            "axes.spines.left": True,
+            "axes.spines.bottom": True,
+            "axes.spines.right": False,
+            "axes.spines.top": False,
+            "savefig.bbox": "tight",
+        },
+    )
 
 
-def plot_voltage_trace(df: pd.DataFrame,
-                       concise=False,
-                       thresh=-20,
-                       offset=False,
-                       edge=False,
-                       ax_props: dict = None,
-                       ax=None, **kwargs):
+def plot_voltage_trace(
+    df: pd.DataFrame,
+    concise=False,
+    thresh=-20,
+    offset=False,
+    edge=False,
+    ax_props: dict = None,
+    ax=None,
+    **kwargs,
+):
     legend = kwargs.pop("legend", "brief")
     palette = kwargs.pop("palette", "Spectral")
     alpha = kwargs.pop("alpha", 0.5)
@@ -61,15 +72,17 @@ def plot_voltage_trace(df: pd.DataFrame,
             # note that concise_df returns a copy, so can change values here
             df.loc[df[SITE_LABEL] == TERMINAL_LABEL, VOLTAGE_LABEL] -= offset
 
-    sns.lineplot(data=df,
-                 x=TIME_LABEL,
-                 y=VOLTAGE_LABEL,
-                 hue=hue,
-                 legend=legend,
-                 palette=palette,
-                 alpha=alpha,
-                 ax=ax,
-                 **kwargs)
+    sns.lineplot(
+        data=df,
+        x=TIME_LABEL,
+        y=VOLTAGE_LABEL,
+        hue=hue,
+        legend=legend,
+        palette=palette,
+        alpha=alpha,
+        ax=ax,
+        **kwargs,
+    )
 
     if ax_props is not None:
         ax.set(**ax_props)
@@ -84,16 +97,17 @@ def get_pulse_xy(amp, frequency, duration):
     dur = STIM_PULSE_DUR  # ms of each pulse
     delay = STIM_ONSET  # ms
 
-    delay_idx = int(delay/dt)
-    x = np.round(np.arange(0, duration+dt+delay, dt), 2)
+    delay_idx = int(delay / dt)
+    x = np.round(np.arange(0, duration + dt + delay, dt), 2)
     y = np.zeros(shape=x.size)
 
     if frequency > 0:
-        num = duration/1000 * frequency
-        per = np.round(1000/frequency, 1)  # interval between pulse onsets
-        x_mask = np.rint(np.linspace(0, duration, int(num+1)) /
-                         dt).astype(int) + delay_idx
-        x_mask_end = x_mask + int(dur/dt)
+        num = duration / 1000 * frequency
+        per = np.round(1000 / frequency, 1)  # interval between pulse onsets
+        x_mask = (
+            np.rint(np.linspace(0, duration, int(num + 1)) / dt).astype(int) + delay_idx
+        )
+        x_mask_end = x_mask + int(dur / dt)
 
         for x_start, x_end in zip(x_mask, x_mask_end):
             y[x_start:x_end] = amp
@@ -111,13 +125,14 @@ def get_pulse_times(frequency, duration):
     if frequency <= 0:
         return delay
 
-    delay_idx = int(delay/dt)
-    x = np.round(np.arange(0, duration+dt+delay, dt), 2)
+    delay_idx = int(delay / dt)
+    x = np.round(np.arange(0, duration + dt + delay, dt), 2)
 
-    num = duration/1000 * frequency
+    num = duration / 1000 * frequency
 
-    x_mask = np.rint(np.linspace(0, duration, int(num+1)) /
-                     dt).astype(int) + delay_idx
+    x_mask = (
+        np.rint(np.linspace(0, duration, int(num + 1)) / dt).astype(int) + delay_idx
+    )
 
     return x[x_mask][:-1]
 
@@ -131,6 +146,6 @@ def save_fig(name, formats=("png", "pdf"), fig=None):
     name_len = len(name)
     for fmt in formats:
         file_name = get_file_path(name, root="save", ext=fmt)
-        logger.info("       " + " "*name_len + f" .{fmt}")
+        logger.info("       " + " " * name_len + f" .{fmt}")
         fig.savefig(file_name, facecolor=fig.get_facecolor(), transparent=True)
     logger.info(f"saved")
