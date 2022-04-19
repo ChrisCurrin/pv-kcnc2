@@ -7,7 +7,7 @@ from src.constants import DISTANCE_LABEL, SECTION_LABEL
 
 
 def mut_name(frac):
-    return f"C165Y - {100*frac:.0f}%" if frac > 0 else "WT"
+    return f"C125Y - {100*frac:.0f}%" if frac > 0 else "WT"
 
 
 def get_key(pv, frac, stim, dur):

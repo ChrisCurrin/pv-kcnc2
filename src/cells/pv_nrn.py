@@ -61,33 +61,33 @@ def get_pv_params(pv):
 
 
 def mut(Pv, MUT):
-    """change Kv3.1/2 conductance within 'mutated' SKv3_1m channels"""
+    """change Kv3.1/2 conductance within 'mutated' Kv3m channels"""
     for sec in Pv.all:
-        if "SKv3_1" in [mech.name() for seg in sec.allseg() for mech in seg]:
-            gSKv3_1 = sec(0.5).gSKv3_1bar_SKv3_1
+        if "Kv3" in [mech.name() for seg in sec.allseg() for mech in seg]:
+            gKv3 = sec(0.5).gmax_Kv3
         for seg in sec:
             for mech in seg:
-                if mech.name() == "SKv3_1m":
-                    seg.gSKv3_1bar_SKv3_1m = MUT * gSKv3_1
-                if mech.name() == "SKv3_1":
-                    seg.gSKv3_1bar_SKv3_1 = (1.0 - MUT) * gSKv3_1
+                if mech.name() == "Kv3m":
+                    seg.gmax_Kv3m = MUT * gKv3
+                if mech.name() == "Kv3":
+                    seg.gmax_Kv3 = (1.0 - MUT) * gKv3
     return Pv
 
 
-def set_relative_nav11bar(
-    Pv, proportion: float, at="nodes", base: Union[float, str] = "axon"
+def set_relative_prop(
+    Pv, prop: str, proportion: float, at="nodes", base: Union[float, str] = "axon"
 ):
-    """Set Nav1.1 conductance relative to a `base` at section(s) - `at`"""
+    """Set prop relative to a `base` at section(s) - `at`"""
     if isinstance(base, str):
         assert (
             at != base
         ), f"cannot change values at '{at}' when it is also the `base_sec`."
-        base = getattr(Pv, base)[-1].gNav11bar_Nav11
+        base = getattr(getattr(Pv, base)[-1], prop)
 
     for sec in getattr(Pv, at):
         if "myelin" in sec.hname():
             continue
-        sec.gNav11bar_Nav11 = base * proportion
+        setattr(sec, prop, base * proportion)
 
 
 def set_nrn_prop(pv, property: str, value: float, secs="all", ignore_error=False):
