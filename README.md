@@ -2,6 +2,15 @@
 
 <!-- [PAPER link]() -->
 
+## Results
+
+### Main
+![main figure](static/fig_model_edited - noninactivating.png)
+
+### Supplementary
+![supp figure](static/fig_model_supp - non-inactivating.png)
+
+
 ## Getting started
 
 1. Install Python (preferably using anaconda)
