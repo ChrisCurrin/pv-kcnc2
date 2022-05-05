@@ -5,10 +5,10 @@
 ## Results
 
 ### Main
-![main figure](/static/fig_model_edited - noninactivating.png)
+![main figure](/static/fig_model_edited-non-inactivating.png)
 
 ### Supplementary
-![supp figure](/static/fig_model_supp - non-inactivating.png)
+![supp figure](/static/fig_model_supp-non-inactivating.png)
 
 
 ## Getting started
