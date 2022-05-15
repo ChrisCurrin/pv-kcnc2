@@ -5,7 +5,7 @@
 ## Results
 
 ### Main
-![main figure](/static/fig_model_edited-non-inactivating.png)
+![main figure](/static/fig_model_edited-non-inactivating.jpg)
 
 ### Supplementary
 ![supp figure](/static/fig_model_supp-non-inactivating.png)
