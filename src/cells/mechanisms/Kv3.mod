@@ -14,7 +14,7 @@ NEURON {
  SUFFIX Kv3
  USEION k READ ek WRITE ik
  RANGE gmax, iKv3, ik
- RANGE theta_m, k_m, tau_m0, tau_m1, phi_m, sigma_m0, sigma_m1,  h0, theta_h, k_h, tau_h0, tau_h1, phi_h, sigma_h0, sigma_h1
+ RANGE theta_m, k_m, tau_m0, tau_m1, phi_m0, phi_m1, sigma_m0, sigma_m1,  h0, theta_h, k_h, tau_h0, tau_h1, phi_h, sigma_h0, sigma_h1
 }
 
 PARAMETER {
@@ -24,7 +24,8 @@ PARAMETER {
  k_m = 7.8 (mV)
  tau_m0 = 0.1 (ms)
  tau_m1 = 80.0 (ms)
- phi_m = -13.0 (mV)
+ phi_m0 = -20.0 (mV)
+ phi_m1 = -13.0 (mV)
  sigma_m0 = 60.0 (mV)
  sigma_m1 = -6.0 (mV)
  h0 = 0.9 
@@ -75,7 +76,7 @@ PROCEDURE settables(v) {
     TABLE minf, taum, hinf, tauh FROM -100 TO 100 WITH 400
 
 	minf = 1.0 / (1.0 + exp((theta_m - v)/k_m))
-	taum = tau_m0 + (tau_m1 - tau_m0)/(exp((phi_m - v)/sigma_m0) + exp((phi_m - v)/sigma_m1))
+	taum = tau_m0 + (tau_m1 - tau_m0)/(exp((phi_m0 - v)/sigma_m0) + exp((phi_m1 - v)/sigma_m1))
 	hinf = h0 + (1.0 - h0) / (1.0 + exp((theta_h - v)/k_h))
 	tauh = tau_h0 + (tau_h1 - tau_h0)/(exp((phi_h - v)/sigma_h0) + exp((phi_h - v)/sigma_h1))
 }

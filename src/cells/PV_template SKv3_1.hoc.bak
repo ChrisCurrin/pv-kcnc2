@@ -129,6 +129,8 @@ begintemplate pv
 
   proc geom_nseg() {
     this.geom_nsec() //To count all sections
+    //TODO: geom_nseg_fixed depends on segCounts which is calculated by
+    //  geom_nsec.  Can this be collapsed?
     this.geom_nseg_fixed(40)
     this.geom_nsec() //To count all sections
   }
@@ -143,8 +145,8 @@ begintemplate pv
       insert Ca_LVAst
       insert Ca_HVA
       insert CaDynamics_E2
-      insert Kv3
-      insert Kv3m
+      insert SKv3_1
+      insert SKv3_1m
       insert SK_E2
       insert K_Tst
       insert K_Pst
@@ -157,10 +159,10 @@ begintemplate pv
       insert NaTs2_t
       insert Nap_Et2
       insert Nav11
-      insert Kv3m
+      insert SKv3_1m
       insert K_Tst
       insert K_Pst
-      insert Kv3
+      insert SKv3_1
       insert Im
       insert Ih
     }
@@ -168,22 +170,22 @@ begintemplate pv
       insert NaTs2_t
       insert Nap_Et2
       insert Nav11
-      insert Kv3
+      insert SKv3_1
       insert SK_E2
       insert K_Tst
       insert K_Pst
       insert CaDynamics_E2
       insert Ca_HVA
       insert Ca_LVAst
-      insert Kv3m
+      insert SKv3_1m
       insert Im
     }
     forsec this.myelinated {
     }
     forsec this.nodes {
       insert Nav11
-      insert Kv3
-      insert Kv3m
+      insert SKv3_1
+      insert SKv3_1m
     }
   }
 
@@ -209,13 +211,13 @@ begintemplate pv
       gK_Pstbar_K_Pst = 4.9798348545652884e-06
       gK_Tstbar_K_Tst = 0.0958123928067732
       gSK_E2bar_SK_E2 = 0.037731878034846213
-      gmax_Kv3 = 0.318181818181818
+      gSKv3_1bar_SKv3_1 = 0.318181818181818
       gCa_HVAbar_Ca_HVA = 6.6928045008285222e-06
       gCa_LVAstbar_Ca_LVAst = 0.00086252457600405862
       decay_CaDynamics_E2 = 357.51087087210146
       gamma_CaDynamics_E2 = 0.0033841884469849211
       gImbar_Im = 0.00031319601262909993
-      gmax_Kv3m = 0
+      gSKv3_1bar_SKv3_1m = 0
     }
 
     forsec CellRef.basal {
@@ -225,10 +227,10 @@ begintemplate pv
       gNaTs2_tbar_NaTs2_t = 0.0020626919757689753
       gNav11bar_Nav11 = 8.7937735030300143e-06
       gNap_Et2bar_Nap_Et2 = 1.6389087983832434e-07
-      gmax_Kv3 = 8.1625882332958207e-05
+      gSKv3_1bar_SKv3_1 = 8.1625882332958207e-05
       gK_Pstbar_K_Pst = 4.7998069883951371e-08
       gK_Tstbar_K_Tst = 1.6848144871536559e-05
-      gmax_Kv3m = 0
+      gSKv3_1bar_SKv3_1m = 0
     }
 
     forsec CellRef.somatic {
@@ -241,13 +243,13 @@ begintemplate pv
       gK_Pstbar_K_Pst = 1.8986651083545768e-05
       gK_Tstbar_K_Tst = 0.019405714609111748
       gSK_E2bar_SK_E2 = 1.6228971252382314e-08
-      gmax_Kv3 = 0.18497365407533689
+      gSKv3_1bar_SKv3_1 = 0.18497365407533689
       gCa_HVAbar_Ca_HVA = 0.00033062469952363
       gCa_LVAstbar_Ca_LVAst = 0.0011410752102358152
       decay_CaDynamics_E2 = 103.86036962355075
       gamma_CaDynamics_E2 = 0.032352264465451266
       gImbar_Im = 0.00010335472123811204
-      gmax_Kv3m = 0
+      gSKv3_1bar_SKv3_1m = 0
     }
 
     forsec CellRef.myelinated {
@@ -261,8 +263,8 @@ begintemplate pv
       // NaV1.1/Kv3 = 3.3
       gNav11bar_Nav11 = 1.0499999999999998
       // value as in AIS
-      gmax_Kv3 = 0.318181818181818
-      gmax_Kv3m = 0
+      gSKv3_1bar_SKv3_1 = 0.318181818181818
+      gSKv3_1bar_SKv3_1m = 0
     }
 
   }
