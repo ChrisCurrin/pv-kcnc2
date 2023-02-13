@@ -7,49 +7,39 @@
 
 # %%
 
+from itertools import product
 import logging
 import platform
 
-from itertools import product
-from neuron import h
-from neuron import gui
-from tqdm import tqdm
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+from neuron import h
+from tqdm import tqdm
 
-
-from src.cells.pv_nrn import get_pv, get_pv_params, set_nrn_prop, mut, set_relative_prop
-
+from src.cells.pv_nrn import get_pv, mut
 from src.constants import *
+from src.constants import (
+    CURRENT_LABEL,
+    DISTANCE_LABEL,
+    FIRING_RATE_LABEL,
+    KVMUT_FRAC_LABEL,
+    SECTION_LABEL,
+    STIM_FREQ_LABEL,
+    TIME_LABEL,
+)
+from src.data import get_cached_df, set_cache_root
+from src.nrn_helpers import init_nrn, remove_cell_from_neuron
+from src.run import run_sims
 from src.settings import *
-from src.data import (
-    get_cached_df,
-    get_file_path,
-    set_cache_root,
-    get_cache_root,
-    wide_to_long,
-    concise_df,
-)
-from src.measure import get_max_propagation, get_ap_times, calculate_failures
-from src.run import get_trace
-from src.utils import (
-    get_key,
-    str_to_tuple,
-    nearest_idx,
-    nearest_value,
-    nearest_idx_val,
-    get_last_sec,
-)
 from src.vis import (
-    plot_voltage_trace,
-    set_default_style,
-    save_fig,
     get_pulse_times,
     get_pulse_xy,
+    plot_voltage_trace,
+    save_fig,
+    set_default_style,
 )
-from src.nrn_helpers import init_nrn, env_var, remove_cell_from_neuron
 
 logging.basicConfig(level=logging.INFO)
 
@@ -61,7 +51,9 @@ if platform.system() == "Windows":
 
 init_nrn(celsius=34, v_init=-80)  # as in BBP optimisation
 
-h.check_simulator()  # method from PV_template.hoc that checks if parameters used during optimisation are the same as those used during simulation
+# checks if parameters used during optimisation are the same as those used during
+# simulation (method from PV_template.hoc)
+h.check_simulator()
 
 set_default_style()
 
@@ -118,117 +110,6 @@ print(f"Mutant properties: {pv_mut_props}")
 remove_cell_from_neuron(pv)
 
 
-# %%
-### create method for running multiple simulations
-def run_sims(
-    pv,
-    stims,
-    fractions,
-    dur,
-    load=False,
-    arrow=False,
-    shape_plot=True,
-    pv_props=None,
-    pbar_prefix="",
-):
-    # create pv if object not passed
-    # this is useful if we want to dispose of the object after the function call
-    _created_pv = False
-    if isinstance(pv, str):
-        pv = get_pv(pv)
-        _created_pv = True
-
-    if pv_props is None:
-        pv_props = {}
-
-    # optionally set the mechanism properties
-    # note, mech props are independent of pv.biophys()
-    for key, val in pv_props.items():
-        set_nrn_prop(pv, key, val, ignore_error=True)
-
-    if pbar_prefix:
-        pbar_prefix += "|>"
-
-    # note that we 'tuple' the product generator to convert it to an iterable of known length for the progressbar
-    pbar = tqdm(tuple(product(stims, fractions)), leave=pbar_prefix == "")
-
-    results = {}
-
-    for stim, frac in pbar:
-        amp, freq = stim
-        key_name = get_key(pv, frac, stim, dur)
-        pbar.set_description(f"{pbar_prefix}{key_name}")
-
-        path = get_file_path(key_name)
-        long_format_path = get_file_path(key_name, ext="arrow")
-
-        x_df = None
-        if not path.exists() or "test" in path.name:
-            pbar.set_description(f"{pbar_prefix}{key_name} running")
-
-            pv.biophys()
-            mut(pv, frac)
-
-            # run sim and save results
-            AP, x_df = get_cached_df(
-                key_name, pv, amp, dur, stim_freq=freq, shape_plot=shape_plot
-            )
-
-        if arrow and not long_format_path.exists():
-            """Save in .feather format, to be loaded using vaex and arrow"""
-            if x_df is None:
-                # load results
-                pbar.set_description(f"{key_name} loading")
-                AP, x_df = get_cached_df(key_name)
-            # format data
-            long_df = wide_to_long(x_df)
-            # add metadata as columns with uniform data along the rows
-            long_df[KVMUT_FRAC_LABEL] = frac
-            long_df[CURRENT_LABEL] = amp
-            long_df["Stim. duration"] = dur
-            long_df[STIM_FREQ_LABEL] = freq
-            long_df["key"] = key_name
-
-            for key, val in AP.items():
-                if isinstance(val, list):
-                    ap_val = " ".join([str(v.n) for v in val])
-                else:
-                    ap_val = val.n
-                long_df[f"AP_{key}"] = ap_val
-
-            for key, val in pv_props.items():
-                long_df[key] = val
-
-            # save
-            pbar.set_description(f"{key_name} saving")
-            long_df.to_feather(long_format_path)
-
-        if load:
-            if x_df is None:
-                # load results
-                pbar.set_description(f"{key_name} loading")
-                AP, x_df = get_cached_df(key_name)
-            df = wide_to_long(x_df) if x_df is not None else None
-
-            # store in dict
-            results[key_name] = {
-                "df": df,
-                KVMUT_FRAC_LABEL: frac,
-                CURRENT_LABEL: amp,
-                "Stim. duration": dur,
-                STIM_FREQ_LABEL: freq,
-                "APCount": AP,
-                **pv_props,
-            }
-
-        pbar.set_description(f"{pbar_prefix}{key_name} done")
-
-    if _created_pv:
-        remove_cell_from_neuron(pv)
-
-    return results
-
-
 # %% [markdown]
 # ### F-I curve
 
@@ -236,8 +117,7 @@ def run_sims(
 stims = [(amp, 0) for amp in np.round(np.arange(0.0, 4.1, 0.1), 3)]
 
 fractions = [0, 0.10, 0.20, 0.25, 0.3, 0.4, 0.5]
-# stims = [(amp, 0) for amp in [0, 0.1, 0.2, 3]]
-# fractions = [0]
+
 dur = 250
 
 amp_result = run_sims("default", stims, fractions, dur=dur, load=True, arrow=False)
@@ -289,86 +169,98 @@ with plt.ion():
 # %%
 stims = [(amp, 0) for amp in np.round(np.arange(0.0, 4.1, 0.1), 3)]
 
-# either change params of the original Kv3.2 channel ("down") or the mutated Kv3.2 channel ("up")
+# either change params of the original Kv3.2 channel ("down")
+# or the mutated Kv3.2 channel ("up")
+# the number is the fraction of Kv3.2 that is the mutant channel (0.25 = 25%)
 mut_directions = {"up": [0.25], "down": [0]}
 
-
+num_spaces = 11
 params = {}
 # params (values are default -> mutant)
 for key, val in pv_mut_props.items():
-    params[key] = np.round(np.linspace(pv_props[key], val, 11), 2)
+    # if the same, add 20% value either side
+    if pv_props[key] == val:
+        params[key] = np.round(
+            np.linspace(0.8 * pv_props[key], 1.2 * pv_props[key], num_spaces), 2
+        )
+    else:
+        params[key] = np.round(np.linspace(pv_props[key], val, num_spaces), 2)
 
 param_df = pd.DataFrame()
 dur = 250
-for mut_up_down, fracs in mut_directions.items():
-    for param_key, param_space in params.items():
-        if isinstance(param_key, tuple):
-            actual_params = [f"{pk}_{mech_type}" for pk in param_key]
+pbar = tqdm(
+    list(product(mut_directions.items(), params.items())),
+    desc=f"up/down |> params ({len(params)*num_spaces}) |> fraction=PV name_(stim)_duration",
+)
+
+for (mut_up_down, fracs), (param_key, param_space) in pbar:
+    if isinstance(param_key, tuple):
+        actual_params = [f"{pk}_{mech_type}" for pk in param_key]
+    else:
+        actual_params = [f"{param_key}_{mech_type}"]
+
+    if mut_up_down == "up":
+        actual_params = [f"{p}m" for p in actual_params]
+    param_name = " ".join(actual_params)
+
+    length = (
+        len(param_space) if not np.iterable(param_space[0]) else len(param_space[0])
+    )
+
+    for i in range(length):
+        if np.iterable(param_space[0]):
+            pv_props = {p: v[i] for p, v in zip(actual_params, param_space)}
         else:
-            actual_params = [f"{param_key}_{mech_type}"]
+            pv_props = {p: param_space[i] for p in actual_params}
 
-        if mut_up_down == "up":
-            actual_params = [f"{p}m" for p in actual_params]
-        param_name = " ".join(actual_params)
+        param_val = tuple(pv_props.values())
+        if len(param_val) == 1:
+            param_val = param_val[0]
+        else:
+            param_val = " ".join([str(v) for v in param_val])
 
-        length = (
-            len(param_space) if not np.iterable(param_space[0]) else len(param_space[0])
+        # join dict as string
+        pv_key = " ".join([f"{k}={v}" for k, v in pv_props.items()])
+
+        param_result = run_sims(
+            pv_key,
+            stims,
+            fracs,
+            dur=dur,
+            load=True,
+            arrow=False,
+            shape_plot=False,  # quicker running/saving/loading but no voltage traces
+            pv_props=pv_props,  # change params
+            pbar_prefix=f"{mut_up_down}|>{param_key}",
         )
 
-        for i in range(length):
-            if np.iterable(param_space[0]):
-                pv_props = {p: v[i] for p, v in zip(actual_params, param_space)}
-            else:
-                pv_props = {p: param_space[i] for p in actual_params}
+        for key, val in param_result.items():
+            nrn_name = key[: key.find("_")]
+            frac = val[KVMUT_FRAC_LABEL]
+            current = val[CURRENT_LABEL]
+            ap_soma = val["APCount"]["soma"].n
+            ap_ais = val["APCount"]["init"].n
+            ap_axon = val["APCount"]["comm"].n
 
-            param_val = tuple(pv_props.values())
-            if len(param_val) == 1:
-                param_val = param_val[0]
-            else:
-                param_val = " ".join([str(v) for v in param_val])
-
-            # join dict as string
-            pv_key = " ".join([f"{k}={v}" for k, v in pv_props.items()])
-
-            param_result = run_sims(
-                pv_key,
-                stims,
-                fracs,
-                dur=dur,
-                load=True,
-                arrow=False,
-                shape_plot=False,  # quicker running/saving/loading but no voltage traces
-                pv_props=pv_props,  # change params
-                pbar_prefix=f"{mut_up_down}|>{param_key}",
+            param_df = pd.concat(
+                [
+                    param_df,
+                    pd.DataFrame(
+                        {
+                            "param": param_name,
+                            "value": param_val,
+                            param_key: param_val,
+                            "mutation direction": mut_up_down,
+                            KVMUT_FRAC_LABEL: frac,
+                            CURRENT_LABEL: current,
+                            "Neuron": nrn_name,
+                            "loc": ["soma", "AIS", "axon"],
+                            "Spikes": [ap_soma, ap_ais, ap_axon],
+                        },
+                    ),
+                ],
+                ignore_index=True,
             )
-
-            for key, val in param_result.items():
-                nrn_name = key[: key.find("_")]
-                frac = val[KVMUT_FRAC_LABEL]
-                current = val[CURRENT_LABEL]
-                ap_soma = val["APCount"]["soma"].n
-                ap_ais = val["APCount"]["init"].n
-                ap_axon = val["APCount"]["comm"].n
-
-                param_df = pd.concat(
-                    [
-                        param_df,
-                        pd.DataFrame(
-                            {
-                                "param": param_name,
-                                "value": param_val,
-                                param_key: param_val,
-                                "mutation direction": mut_up_down,
-                                KVMUT_FRAC_LABEL: frac,
-                                CURRENT_LABEL: current,
-                                "Neuron": nrn_name,
-                                "loc": ["soma", "AIS", "axon"],
-                                "Spikes": [ap_soma, ap_ais, ap_axon],
-                            },
-                        ),
-                    ],
-                    ignore_index=True,
-                )
 param_df[FIRING_RATE_LABEL] = param_df["Spikes"] / (dur / 1000)
 param_df
 
@@ -395,14 +287,8 @@ sns.relplot(
 with sns.plotting_context("poster"):
     fig, axes = plt.subplot_mosaic(
         [
-            [
-                "iv_shift_SKv3_1",
-                "tau_shift_SKv3_1",
-            ],  # how normal channels can be impacted
-            [
-                "iv_shift_SKv3_1m",
-                "tau_shift_SKv3_1m",
-            ],  # how pathological channels can be repaired
+            [f"{p}_{mech_type}" for p in props_to_find],  # how normal channels can be impacted
+            [f"{p}_{mech_type}m" for p in props_to_find],  # how pathological channels can be repaired
         ],
         sharey=True,
         sharex=True,
@@ -418,7 +304,7 @@ with sns.plotting_context("poster"):
     )
 
     for i, (key, ax) in enumerate(axes.items()):
-        col = key.replace("_SKv3_1m", "").replace("_SKv3_1", "")
+        col = key.replace(f"_{mech_type}m", "").replace(f"_{mech_type}", "")
         pal = (
             sns.blend_palette(["grey", "g"], n_colors=len(params[col]))
             if "Kv3m" in key
@@ -456,6 +342,8 @@ with sns.plotting_context("poster"):
             legend=False,
         )
         ax.set_title(key)
+
+plt.show()
 
 
 # %% [markdown]

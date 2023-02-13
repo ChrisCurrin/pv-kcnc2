@@ -1,12 +1,158 @@
+from itertools import product
 from typing import List, Union
 import logging
 import pandas as pd
 from neuron import h
+from tqdm import tqdm
 
-from src.constants import DISTANCE_LABEL, SECTION_LABEL, TIME_LABEL
-from src.cells.pv_nrn import set_stim
+from src.constants import (
+    CURRENT_LABEL,
+    DISTANCE_LABEL,
+    KVMUT_FRAC_LABEL,
+    SECTION_LABEL,
+    STIM_FREQ_LABEL,
+    TIME_LABEL,
+)
+from src.cells.pv_nrn import get_pv, mut, set_nrn_prop, set_stim
+from src.data.dataframes import wide_to_long, get_cached_df
+from src.data.files import get_file_path
+from src.nrn_helpers import remove_cell_from_neuron
+from src.utils import get_key
 
 logger = logging.getLogger(__name__)
+
+
+def run_sims(
+    pv,
+    stims,
+    fractions,
+    dur,
+    load=False,
+    arrow=False,
+    shape_plot=True,
+    pv_props=None,
+    pbar_prefix="",
+):
+    """
+    Run simulations for a given set of parameters
+
+    :param pv: name of the cell to simulate
+    :param stims: list of tuples of (current, frequency)
+    :param fractions: list of fractions of Kv mutations
+    :param dur: duration of the simulation
+    :param load: load the results from file if they exist
+    :param arrow: save the results in arrow format
+    :param shape_plot: plot the shape of the AP
+    :param pv_props: properties of the cell mechanisms to set
+    :param pbar_prefix: prefix for the progress bar
+    :return: dictionary of results
+    """
+
+    # create pv if object not passed
+    # this is useful if we want to dispose of the object after the function call
+    _created_pv = False
+    if isinstance(pv, str):
+        pv = get_pv(pv)
+        _created_pv = True
+
+    if pv_props is None:
+        pv_props = {}
+
+    # optionally set the mechanism properties
+    # note, mech props are independent of pv.biophys()
+    if pv_props:
+        try:
+            pbar_prefix += "|usetable=0|"
+            h.usetable_Kv3 = 0
+            h.usetable_Kv3m = 0
+        except AttributeError:
+            pass
+        for key, val in pv_props.items():
+            set_nrn_prop(pv, key, val, ignore_error=True)
+    else:
+        h.usetable_Kv3 = 1
+        h.usetable_Kv3m = 1
+    if pbar_prefix:
+        pbar_prefix += "|>"
+
+    # note that we 'tuple' the product generator to convert it to an iterable of known length for the progressbar
+    pbar = tqdm(tuple(product(stims, fractions)), leave=pbar_prefix == "")
+
+    results = {}
+
+    for stim, frac in pbar:
+        amp, freq = stim
+        key_name = get_key(pv, frac, stim, dur)
+        pbar.set_description(f"{pbar_prefix}{key_name}")
+
+        path = get_file_path(key_name)
+        long_format_path = get_file_path(key_name, ext="arrow")
+
+        x_df = None
+        if not path.exists() or "test" in path.name:
+            pbar.set_description(f"{pbar_prefix}{key_name} running")
+
+            pv.biophys()
+            mut(pv, frac)
+
+            # run sim and save results
+            AP, x_df = get_cached_df(
+                key_name, pv, amp, dur, stim_freq=freq, shape_plot=shape_plot
+            )
+
+        if arrow and not long_format_path.exists():
+            """Save in .feather format, to be loaded using vaex and arrow"""
+            if x_df is None:
+                # load results
+                pbar.set_description(f"{key_name} loading")
+                AP, x_df = get_cached_df(key_name)
+            # format data
+            long_df = wide_to_long(x_df)
+            # add metadata as columns with uniform data along the rows
+            long_df[KVMUT_FRAC_LABEL] = frac
+            long_df[CURRENT_LABEL] = amp
+            long_df["Stim. duration"] = dur
+            long_df[STIM_FREQ_LABEL] = freq
+            long_df["key"] = key_name
+
+            for key, val in AP.items():
+                if isinstance(val, list):
+                    ap_val = " ".join([str(v.n) for v in val])
+                else:
+                    ap_val = val.n
+                long_df[f"AP_{key}"] = ap_val
+
+            for key, val in pv_props.items():
+                long_df[key] = val
+
+            # save
+            pbar.set_description(f"{key_name} saving")
+            long_df.to_feather(long_format_path)
+
+        if load:
+            if x_df is None:
+                # load results
+                pbar.set_description(f"{key_name} loading")
+                AP, x_df = get_cached_df(key_name)
+            df = wide_to_long(x_df) if x_df is not None else None
+
+            # store in dict
+            results[key_name] = {
+                "df": df,
+                KVMUT_FRAC_LABEL: frac,
+                CURRENT_LABEL: amp,
+                "Stim. duration": dur,
+                STIM_FREQ_LABEL: freq,
+                "APCount": AP,
+                **pv_props,
+            }
+
+        pbar.set_description(f"{pbar_prefix}{key_name} done")
+
+    if _created_pv:
+        remove_cell_from_neuron(pv)
+
+    return results
 
 
 def record_var(sec, to_record: str, loc: float = 0.5):
@@ -116,4 +262,3 @@ def hRun(T):
     h.tstop = T
     h.cvode_active(1)
     h.run()
-

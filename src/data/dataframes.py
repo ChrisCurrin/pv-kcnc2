@@ -11,7 +11,6 @@ from src.constants import (
     VOLTAGE_LABEL,
 )
 from src.data.files import get_file_path
-from src.run import get_trace
 from src.types import APCount
 from tables import NaturalNameWarning
 
@@ -28,6 +27,8 @@ def get_cached_df(name, *args, **kwargs):
 
     Internally, calls `get_trace` if it cannot find a local cached version according to `name` in the `cache_root`.
     """
+    from src.run import get_trace
+
     cache_root = kwargs.pop("cache_root", None)
 
     path = get_file_path(name, root=cache_root)

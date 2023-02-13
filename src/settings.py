@@ -36,7 +36,9 @@ if platform.system() == "Linux" or platform.system() == "Darwin":
     from pathlib import Path
     nrnmechs = list(Path(MOD_PATH).glob("*/**/libnrnmech.so"))
     if len(nrnmechs) != 1:
-        raise ValueError(f"libnrnmech.so not found in {MOD_PATH}")
+        # has not been compiled before
+        nrnmechs = [Path(MOD_PATH + "x86_64/libnrnmech.so")]
+        # raise ValueError(f"libnrnmech.so not found in {MOD_PATH}")
     NRNMECH_PATH = str(nrnmechs[0].absolute())
     # if "arm" in platform.processor():
         # NRNMECH_PATH = MOD_PATH + 

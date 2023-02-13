@@ -1,7 +1,8 @@
 # Project
 save/**
 **/mechanisms/arm64/
-**/mechanisms/hash.*
+**/mechanisms/x86_64/
+**/mechanisms/hash*
 
 # NEURON
 *.dll

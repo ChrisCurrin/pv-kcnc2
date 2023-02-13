@@ -5,20 +5,24 @@
 ## Results
 
 ### Main
-![main figure](/static/fig_model_edited-non-inactivating.jpg)
+![main figure](/static/fig_model_edited.jpg)
 
 ### Supplementary
-![supp figure](/static/fig_model_supp-non-inactivating.png)
+![supp figure](/static/fig_model_supp.jpg)
 
 
 ## Getting started
 
 1. Install Python (preferably using anaconda)
-2. Install python packages 
-   
+1. Create a virtual environment and install packages from environment.yml
+    
+   `conda env create -f environment.yml`
+
+2. Install additional python packages ([NEURON](https://neuron.yale.edu/neuron/download) and [`nrnutils`](https://github.com/ChrisCurrin/nrnutils))
+
     `pip install -r requirements.txt`
 
-3. (Optional, Windows only) [Install NEURON with an installer](https://neuron.yale.edu/neuron/download)
+2. (Alternative, Windows only) [Install NEURON with an installer](https://neuron.yale.edu/neuron/download)
 4. Run notebook
 
     `jupyter lab notebook.ipynb`

@@ -1,0 +1,2 @@
+NEURON==8.2.2
+nrnutils @ git+https://github.com/ChrisCurrin/nrnutils.git@c41fd78b3d017afee8a3c181d95c6f1b23e710a3
