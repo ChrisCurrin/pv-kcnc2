@@ -22,19 +22,21 @@ def _ap_series_to_ap(ap_series) -> dict:
     }
 
 
-def get_cached_df(name, *args, **kwargs):
+def get_cached_df(name, *args, recache=False, **kwargs):
     """Like `get_trace` but saves a copy.
 
     Internally, calls `get_trace` if it cannot find a local cached version according to `name` in the `cache_root`.
+
+    Will **not** save a cached version if `test` is in `name` or test=True is passed in as a keyword arg.
     """
     from src.run import get_trace
 
     cache_root = kwargs.pop("cache_root", None)
 
     path = get_file_path(name, root=cache_root)
-    is_test = "test" in name
+    is_test = kwargs.pop("test", "test" in name)
 
-    if not is_test and path.exists():
+    if not is_test and not recache and path.exists():
         try:
             x_df = pd.read_hdf(path, "df")
         except KeyError:

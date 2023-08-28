@@ -11,7 +11,7 @@ UNITS {
 }
 
 NEURON {
- SUFFIX Kv3
+ SUFFIX Kv3mixed
  USEION k READ ek WRITE ik
  RANGE gmax, iKv3, ik
  RANGE theta_m, k_m, tau_m0, tau_m1, phi_m0, phi_m1, sigma_m0, sigma_m1,  h0, theta_h, k_h, tau_h0, tau_h1, phi_h, sigma_h0, sigma_h1
@@ -20,14 +20,14 @@ NEURON {
 PARAMETER {
  v (mV)
  gmax  = 0.001 (mho/cm2)
- theta_m = -13.0 (mV)
- k_m = 7.8 (mV)
+ theta_m = -30.0 (mV)
+ k_m = 15 (mV)
  tau_m0 = 0.1 (ms)
- tau_m1 = 80.0 (ms)
+ tau_m1 = 80 (ms)
  phi_m0 = -20.0 (mV)
- phi_m1 = -13.0 (mV)
- sigma_m0 = 60.0 (mV)
- sigma_m1 = -6.0 (mV)
+ phi_m1 = -45.0 (mV)
+ sigma_m0 = 100.0 (mV)
+ sigma_m1 = -12.0 (mV)
  h0 = 0.95 
  theta_h = -20.0 (mV)
  k_h = -10.0 (mV)
@@ -82,9 +82,3 @@ PROCEDURE settables(v) {
 }
 
 UNITSON
-
-
-
-
-
-

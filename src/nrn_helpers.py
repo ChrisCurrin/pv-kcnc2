@@ -84,10 +84,13 @@ def remove_cell_from_neuron(cell: Union[str, "hoc.HocObject"]):
     :param cell: name of cell to remove. If hoc.HocObject is given, must have an 'all' attribute
     """
     from neuron import h
-    from src.cells.pv_nrn import get_pv
+    from src.cells.pv_nrn import get_pv, get_pv_mixed
 
     if isinstance(cell, str):
-        cell = get_pv(cell)
+        if "mixed" in cell:
+            cell = get_pv_mixed(cell)
+        else:
+            cell = get_pv(cell)
     for sec in cell.all:
         h.delete_section(sec=sec)
 

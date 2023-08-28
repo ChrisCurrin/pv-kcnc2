@@ -7,12 +7,24 @@ from src.constants import DISTANCE_LABEL, SECTION_LABEL
 
 
 def mut_name(frac):
-    return f"C125Y - {100*frac:.0f}%" if frac > 0 else "WT"
+    if frac == 1:
+        return "C125Y"
+    elif frac == 0:
+        return "WT"
+    return f"C125Y - {100*frac:.0f}%"
 
 
 def get_key(pv, frac, stim, dur):
     basename = mut_name(frac)
-    return f"{basename}_{pv.name}_{stim}_{dur}"
+    pv_name = pv.name
+    if "mixed" in pv_name:
+        if "C125Y" in basename:
+            basename = f"WT+{basename}"
+
+        pv_name = (
+            pv_name.replace("-mixed", "").replace("mixed-", "").replace("mixed", "")
+        )
+    return f"{basename}_{pv_name}_{stim}_{dur}"
 
 
 def str_to_tuple(s):

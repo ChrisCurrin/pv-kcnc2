@@ -7,7 +7,6 @@ from typing import Union
 import numpy as np
 from neuron import h
 from src.settings import STIM_ONSET, STIM_PULSE_DUR
-from src.utils import mut_name
 
 pvParams = namedtuple("pvParams", "target_myelinated_L node_spacing node_length ais_L")
 
@@ -50,6 +49,44 @@ def get_pv(
     return pv
 
 
+@lru_cache()
+def get_pv_mixed(
+    name="default",
+    target_myelinated_L=1000.0,
+    node_spacing=30.0,
+    node_length=1.0,
+    ais_L=60.0,
+):
+    """Create a parvalbumin-positive interneuron neuron.
+
+    Note that this function is cached to reduce the number of neurons created by repeated calls.
+
+    """
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    morph_dir = str(Path(f"{dir_path}/morphologies").absolute()).replace("\\", "/")
+    try:
+        pv = h.pv_mixed(
+            morph_dir,
+            "C210401C.asc",
+            target_myelinated_L,
+            node_spacing,
+            node_length,
+            ais_L,
+        )
+        pv.name = (
+            f"{name}({target_myelinated_L}, {node_spacing}, {node_length}, {ais_L})"
+        )
+    except AttributeError:
+        pv_template = Path("PV_template_wt_plus_mutant.hoc").absolute()
+        if not pv_template.exists():
+            pv_template = Path(f"{dir_path}/PV_template_wt_plus_mutant.hoc").absolute()
+        h.load_file(str(pv_template).replace("\\", "/"))
+
+        pv = get_pv_mixed(name, target_myelinated_L, node_spacing, node_length, ais_L)
+
+    return pv
+
+
 def get_pv_params(pv):
     pv_full_name = pv.name
     p0 = pv_full_name.index("(")
@@ -69,8 +106,10 @@ def mut(Pv, MUT):
             for mech in seg:
                 if mech.name() == "Kv3m":
                     seg.gmax_Kv3m = MUT * gKv3
-                if mech.name() == "Kv3":
+                elif mech.name() == "Kv3":
                     seg.gmax_Kv3 = (1.0 - MUT) * gKv3
+                elif mech.name() == "Kv3mixed":
+                    seg.gmax_Kv3mixed = MUT * gKv3
     return Pv
 
 

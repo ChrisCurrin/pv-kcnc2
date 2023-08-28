@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ def get_file_path(name: Union[str, Path], root=None, ext=".h5") -> Path:
     return path
 
 
-def delete_files(paths: Union[str, Path, List[Union[str, Path]]]):
+def delete_files(paths: Union[str, Path, list[Union[str, Path]]]):
     """Delete the files in the list of paths."""
     if isinstance(paths, str):
         paths = [paths]

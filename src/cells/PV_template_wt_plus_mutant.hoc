@@ -18,7 +18,7 @@ proc check_simulator() {
   check_parameter("v_init", -80, v_init)
 }
 
-begintemplate pv
+begintemplate pv_mixed
   public init, morphology, geom_nseg_fixed, geom_nsec
   public soma, dend, apic, axon, myelin, node
   create soma[1], dend[1], apic[1], axon[1], myelin[1], node[1]
@@ -144,7 +144,7 @@ begintemplate pv
       insert Ca_HVA
       insert CaDynamics_E2
       insert Kv3
-      insert Kv3m
+      insert Kv3mixed
       insert SK_E2
       insert K_Tst
       insert K_Pst
@@ -158,7 +158,7 @@ begintemplate pv
       insert Nap_Et2
       insert Nav11
       insert Kv3
-      insert Kv3m
+      insert Kv3mixed
       insert K_Tst
       insert K_Pst
       insert Im
@@ -169,7 +169,7 @@ begintemplate pv
       insert Nap_Et2
       insert Nav11
       insert Kv3
-      insert Kv3m
+      insert Kv3mixed
       insert SK_E2
       insert K_Tst
       insert K_Pst
@@ -184,7 +184,7 @@ begintemplate pv
     forsec this.nodes {
       insert Nav11
       insert Kv3
-      insert Kv3m
+      insert Kv3mixed
     }
   }
 
@@ -216,7 +216,7 @@ begintemplate pv
       decay_CaDynamics_E2 = 357.51087087210146
       gamma_CaDynamics_E2 = 0.0033841884469849211
       gImbar_Im = 0.00031319601262909993
-      gmax_Kv3m = 0
+      gmax_Kv3mixed = 0
     }
 
     forsec CellRef.basal {
@@ -229,7 +229,7 @@ begintemplate pv
       gmax_Kv3 = 8.1625882332958207e-05
       gK_Pstbar_K_Pst = 4.7998069883951371e-08
       gK_Tstbar_K_Tst = 1.6848144871536559e-05
-      gmax_Kv3m = 0
+      gmax_Kv3mixed = 0
     }
 
     forsec CellRef.somatic {
@@ -248,7 +248,7 @@ begintemplate pv
       decay_CaDynamics_E2 = 103.86036962355075
       gamma_CaDynamics_E2 = 0.032352264465451266
       gImbar_Im = 0.00010335472123811204
-      gmax_Kv3m = 0
+      gmax_Kv3mixed = 0
     }
 
     forsec CellRef.myelinated {
@@ -263,7 +263,7 @@ begintemplate pv
       gNav11bar_Nav11 = 1.0499999999999998
       // value as in AIS
       gmax_Kv3 = 0.318181818181818
-      gmax_Kv3m = 0
+      gmax_Kv3mixed = 0
     }
 
   }
@@ -474,4 +474,4 @@ begintemplate pv
 
   }
 
-endtemplate pv
+endtemplate pv_mixed

@@ -1,10 +1,14 @@
-from itertools import product
-from typing import List, Union
+from __future__ import annotations
+
 import logging
+from itertools import product
+from typing import Literal, Optional, Union
+
 import pandas as pd
 from neuron import h
 from tqdm import tqdm
 
+from src.cells.pv_nrn import get_pv, get_pv_mixed, mut, set_nrn_prop, set_stim
 from src.constants import (
     CURRENT_LABEL,
     DISTANCE_LABEL,
@@ -13,8 +17,7 @@ from src.constants import (
     STIM_FREQ_LABEL,
     TIME_LABEL,
 )
-from src.cells.pv_nrn import get_pv, mut, set_nrn_prop, set_stim
-from src.data.dataframes import wide_to_long, get_cached_df
+from src.data.dataframes import get_cached_df, wide_to_long
 from src.data.files import get_file_path
 from src.nrn_helpers import remove_cell_from_neuron
 from src.utils import get_key
@@ -28,9 +31,11 @@ def run_sims(
     fractions,
     dur,
     load=False,
+    recache=False,
     arrow=False,
     shape_plot=True,
-    pv_props=None,
+    pv_props: Optional[dict] = None,
+    mech_type="Kv3",
     pbar_prefix="",
 ):
     """
@@ -41,6 +46,7 @@ def run_sims(
     :param fractions: list of fractions of Kv mutations
     :param dur: duration of the simulation
     :param load: load the results from file if they exist
+    :param recache: (force) recache the results
     :param arrow: save the results in arrow format
     :param shape_plot: plot the shape of the AP
     :param pv_props: properties of the cell mechanisms to set
@@ -52,8 +58,13 @@ def run_sims(
     # this is useful if we want to dispose of the object after the function call
     _created_pv = False
     if isinstance(pv, str):
-        pv = get_pv(pv)
-        _created_pv = True
+        if "midex" in pv:
+            raise NotImplementedError("likely a spelling mistake, use 'mixed' instead")
+        if "mixed" in pv:
+            pv = get_pv_mixed(pv)
+        else:
+            pv = get_pv(pv)
+        _created_pv = True and "test" not in pv.name
 
     if pv_props is None:
         pv_props = {}
@@ -61,43 +72,54 @@ def run_sims(
     # optionally set the mechanism properties
     # note, mech props are independent of pv.biophys()
     if pv_props:
-        try:
-            pbar_prefix += "|usetable=0|"
-            h.usetable_Kv3 = 0
-            h.usetable_Kv3m = 0
-        except AttributeError:
-            pass
+        pbar_prefix += "|usetable=0|"
+        h.usetable_Kv3 = 0
+        h.usetable_Kv3m = 0
+        h.usetable_Kv3mixed = 0
+
         for key, val in pv_props.items():
             set_nrn_prop(pv, key, val, ignore_error=True)
+
+        print_mech_props(pv, mech_type)
     else:
         h.usetable_Kv3 = 1
         h.usetable_Kv3m = 1
+        h.usetable_Kv3mixed = 1
     if pbar_prefix:
-        pbar_prefix += "|>"
+        pbar_prefix += ">"
 
     # note that we 'tuple' the product generator to convert it to an iterable of known length for the progressbar
     pbar = tqdm(tuple(product(stims, fractions)), leave=pbar_prefix == "")
-
     results = {}
 
     for stim, frac in pbar:
+        pbar_progress_status = ""
         amp, freq = stim
         key_name = get_key(pv, frac, stim, dur)
-        pbar.set_description(f"{pbar_prefix}{key_name}")
+        pbar.set_description(f"{pbar_prefix}{key_name}{pbar_progress_status:>10s}")
 
         path = get_file_path(key_name)
         long_format_path = get_file_path(key_name, ext="arrow")
 
         x_df = None
-        if not path.exists() or "test" in path.name:
-            pbar.set_description(f"{pbar_prefix}{key_name} running")
+        if recache or ("test" in path.name) or (not path.exists()):
+            pbar_progress_status = "running"
+            pbar.set_description(
+                f"{pbar_prefix}{key_name:>60s}{pbar_progress_status:>10s}"
+            )
 
             pv.biophys()
             mut(pv, frac)
 
             # run sim and save results
             AP, x_df = get_cached_df(
-                key_name, pv, amp, dur, stim_freq=freq, shape_plot=shape_plot
+                key_name,
+                pv,
+                amp,
+                dur,
+                stim_freq=freq,
+                shape_plot=shape_plot,
+                recache=recache,
             )
 
         if arrow and not long_format_path.exists():
@@ -132,7 +154,10 @@ def run_sims(
         if load:
             if x_df is None:
                 # load results
-                pbar.set_description(f"{key_name} loading")
+                pbar_progress_status = "loading"
+                pbar.set_description(
+                    f"{pbar_prefix}{key_name:>60s}{pbar_progress_status:>10s}"
+                )
                 AP, x_df = get_cached_df(key_name)
             df = wide_to_long(x_df) if x_df is not None else None
 
@@ -146,13 +171,52 @@ def run_sims(
                 "APCount": AP,
                 **pv_props,
             }
+        pbar_progress_status = "done"
+        pbar.set_description(f"{pbar_prefix}{key_name:>60s}{pbar_progress_status:>10s}")
 
-        pbar.set_description(f"{pbar_prefix}{key_name} done")
+    pbar.close()
 
     if _created_pv:
         remove_cell_from_neuron(pv)
 
     return results
+
+
+def print_mech_props(pv, mech_type: Literal["Kv3", "SKv3_1"]):
+    props_to_find_dict = {
+        "Kv3": [
+            "theta_m",
+            "k_m",
+            "tau_m0",
+            "tau_m1",
+            "phi_m0",
+            "phi_m1",
+            "sigma_m0",
+            "sigma_m1",
+        ],
+        "SKv3_1": ["iv_shift", "iv_gain", "tau_scale", "tau_shift", "tau_gain"],
+    }
+    prop_types = {
+        "Kv3": "Wild-type",
+        "SKv3_1": "Wild-type",
+        "Kv3m": "Mutant",
+        "SKv3_1m": "Mutant",
+        "Kv3mixed": "Wild-type + Mutant",
+        "SKv3_1mixed": "Wild-type + Mutant",
+    }
+    props_to_find = props_to_find_dict[mech_type]
+    for sec in pv.node:
+        for seg in sec:
+            for mech in seg:
+                if mech.name() in prop_types:
+                    possible_props = [
+                        prop for prop in dir(mech) if not prop.startswith("_")
+                    ]
+                    print(f"possible props for {mech}: {possible_props}")
+                    _pv_props = {prop: getattr(mech, prop) for prop in props_to_find}
+                    print(f"{prop_types[mech.name()]} properties: {_pv_props}")
+            break
+        break
 
 
 def record_var(sec, to_record: str, loc: float = 0.5):
@@ -238,7 +302,7 @@ def get_trace(
 
 
 def getIF(
-    inputs: List[float], Pv, dur: float = 500, ap_secs: Union[List, str] = "init"
+    inputs: list[float], Pv, dur: float = 500, ap_secs: Union[list, str] = "init"
 ):
     """get input-output (in frequency, Hz) for a list of inputs and diference sections `ap_secs`"""
     if isinstance(ap_secs, str):
