@@ -37,6 +37,7 @@ def run_sims(
     pv_props: Optional[dict] = None,
     mech_type="Kv3",
     pbar_prefix="",
+    print_props=False,
 ):
     """
     Run simulations for a given set of parameters
@@ -79,8 +80,8 @@ def run_sims(
 
         for key, val in pv_props.items():
             set_nrn_prop(pv, key, val, ignore_error=True)
-
-        print_mech_props(pv, mech_type)
+        if print_props:
+            print_mech_props(pv, mech_type)
     else:
         h.usetable_Kv3 = 1
         h.usetable_Kv3m = 1

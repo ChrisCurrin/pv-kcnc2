@@ -7,12 +7,12 @@ from src.data.files import get_file_path
 tau_df = pd.read_csv(get_file_path("new_tau", "data", ext="csv")).infer_objects()
 tau_types = tau_df["tau type"].unique()
 
-fig, axes = plt.subplot_mosaic([list(tau_types)], figsize=(8, 4))  # type: ignore
+fig, axs = plt.subplot_mosaic([list(tau_types)], figsize=(8, 4))  # type: ignore
 axes: dict[str, plt.Axes]
 
 for i, tau_type in enumerate(tau_types):
     tau_type_df = tau_df[tau_df["tau type"] == tau_type]
-    ax = axes[tau_type]
+    ax = axs[tau_type]
 
     # add error bars from "SE" column
     for group in tau_type_df["group"].unique():

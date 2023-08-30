@@ -21,7 +21,7 @@ PARAMETER {
  v (mV)
  gmax  = 0.001 (mho/cm2)
  theta_m = -30.0 (mV)
- k_m = 15 (mV)
+ k_m = 13 (mV)
  tau_m0 = 0.1 (ms)
  tau_m1 = 80 (ms)
  phi_m0 = -20.0 (mV)

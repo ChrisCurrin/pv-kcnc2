@@ -285,10 +285,14 @@ sns.relplot(
 
 # %%
 with sns.plotting_context("poster"):
-    fig, axes = plt.subplot_mosaic(
+    fig, axs = plt.subplot_mosaic(
         [
-            [f"{p}_{mech_type}" for p in props_to_find],  # how normal channels can be impacted
-            [f"{p}_{mech_type}m" for p in props_to_find],  # how pathological channels can be repaired
+            [
+                f"{p}_{mech_type}" for p in props_to_find
+            ],  # how normal channels can be impacted
+            [
+                f"{p}_{mech_type}m" for p in props_to_find
+            ],  # how pathological channels can be repaired
         ],
         sharey=True,
         sharex=True,
@@ -303,7 +307,7 @@ with sns.plotting_context("poster"):
         size="Neuron",
     )
 
-    for i, (key, ax) in enumerate(axes.items()):
+    for i, (key, ax) in enumerate(axs.items()):
         col = key.replace(f"_{mech_type}m", "").replace(f"_{mech_type}", "")
         pal = (
             sns.blend_palette(["grey", "g"], n_colors=len(params[col]))

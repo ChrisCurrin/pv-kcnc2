@@ -18,7 +18,7 @@ files = list(Path(".").glob("*4758.abf"))
 assert len(files) == 1, "Could not find file"
 abf = pyabf.ABF(files[0])
 # abf.headerLaunch()
-fig, axes = plt.subplots(
+fig, axs = plt.subplots(
     nrows=3, gridspec_kw={"height_ratios": [3, 1, 2]}, figsize=(8, 8)
 )
 sns.set_palette("Spectral", n_colors=len(abf.sweepList))
@@ -57,11 +57,11 @@ for i in abf.sweepList:
     print(f"{tau=:.2f} | {popt[2]=:.2f}")
     taus.append((abf.sweepC[decay_idx][0], tau))
 
-    axes[0].plot(
+    axs[0].plot(
         abf.sweepX * 1000, abf.sweepY, label=f"{tau:.2f}", c=pal[i]  # type: ignore
     )
-    axes[1].plot(abf.sweepX * 1000, abf.sweepC, c=pal[i])  # type: ignore
-    axes[0].plot(
+    axs[1].plot(abf.sweepX * 1000, abf.sweepC, c=pal[i])  # type: ignore
+    axs[0].plot(
         t_np[decay_idx],
         exp_func_to_fit(t_np[decay_idx], *popt),
         ls="--",
@@ -69,14 +69,14 @@ for i in abf.sweepList:
         c=pal[i],  # type: ignore
     )
 
-axes[0].legend()
-axes[0].set_xlim(45, 150)
-axes[1].set_xlim(45, 150)
+axs[0].legend()
+axs[0].set_xlim(45, 150)
+axs[1].set_xlim(45, 150)
 
-axes[-1].plot(*zip(*taus), "k-")
+axs[-1].plot(*zip(*taus), "k-")
 for i, (v, tau) in enumerate(taus):
-    axes[-1].plot(v, tau, "o", c=pal[i])
-# axes[0].set_ylim(0,400)
+    axs[-1].plot(v, tau, "o", c=pal[i])
+# axs[0].set_ylim(0,400)
 
 print(infos)
 
