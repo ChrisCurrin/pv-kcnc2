@@ -7,9 +7,9 @@
 
 # %%
 
-from itertools import product
 import logging
 import platform
+from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,15 +20,6 @@ from tqdm import tqdm
 
 from src.cells.pv_nrn import get_pv, mut
 from src.constants import *
-from src.constants import (
-    CURRENT_LABEL,
-    DISTANCE_LABEL,
-    FIRING_RATE_LABEL,
-    KVMUT_FRAC_LABEL,
-    SECTION_LABEL,
-    STIM_FREQ_LABEL,
-    TIME_LABEL,
-)
 from src.data import get_cached_df, set_cache_root
 from src.nrn_helpers import init_nrn, remove_cell_from_neuron
 from src.run import run_sims
